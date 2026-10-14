@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Attendance Management System</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:Arial,sans-serif;background:#f1f5f9;color:#1e293b;padding:20px}
+        .container{max-width:1200px;margin:auto}
+        header{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:white;padding:30px;border-radius:15px;margin-bottom:25px}
+        header h1{margin-bottom:10px}header p{opacity:.9}
+        .dashboard{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin-bottom:25px}
+        .card,.section{background:white;padding:20px;border-radius:12px;box-shadow:0 3px 10px #00000008}
+        .card h3{font-size:14px;color:#64748b;margin-bottom:12px}.card p{font-size:28px;font-weight:bold}
+        .purple{color:#6366f1}.green{color:#16a34a}.red{color:#dc2626}.orange{color:#ea580c}
+        .section{margin-bottom:25px}.section h2{margin-bottom:20px;font-size:21px}
+        .form-row{display:flex;gap:12px;flex-wrap:wrap;align-items:end}.form-group{flex:1;min-width:150px}
+        label{display:block;font-size:14px;font-weight:bold;margin-bottom:8px}
+        input,select{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;background:white}
+        input:focus,select:focus{outline:2px solid #c7d2fe;border-color:#6366f1}
+        button{padding:11px 16px;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:bold;transition:.2s}
+        button:hover{opacity:.85}.add-btn{background:#4f46e5;color:white}.present-btn{background:#dcfce7;color:#166534}
+        .absent-btn{background:#fee2e2;color:#991b1b}.neutral-btn{background:#e2e8f0;color:#334155}
+        .delete-btn{background:#ef4444;color:white;padding:8px 10px}.active-present{background:#16a34a;color:white}.active-absent{background:#dc2626;color:white}
+        .table-wrapper{width:100%;overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:650px}
+        th,td{padding:14px 12px;text-align:left;border-bottom:1px solid #e2e8f0}th{background:#f8fafc;color:#475569;font-size:13px}td{font-size:14px}
+        .attendance-buttons{display:flex;gap:8px}.percentage{font-weight:bold;color:#4f46e5}
+        .empty-message{text-align:center;padding:25px;color:#64748b}
+        .calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
+        .day-heading{text-align:center;padding:10px 0;font-size:12px;font-weight:bold;color:#64748b}
+        .day-box{min-height:75px;border:1px solid #e2e8f0;border-radius:8px;padding:8px;cursor:pointer;background:#fff}
+        .day-box:hover{border-color:#6366f1;background:#eef2ff}.day-box.selected{border:2px solid #4f46e5;background:#eef2ff}.day-box.today{background:#f0fdf4}
+        .day-number{font-weight:bold;margin-bottom:8px}.day-summary{font-size:11px;line-height:1.5}
+        .day-present{color:#15803d}.day-absent{color:#dc2626}.calendar-note{margin-top:15px;color:#64748b;font-size:13px}
+        .toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin-bottom:20px}.toolbar .form-group{max-width:220px}
+        .toolbar .form-group.date-group{max-width:200px}.date-title{margin-bottom:15px;font-size:16px}
+        .footer{text-align:center;padding:20px;color:#64748b;font-size:13px}
+        @media(max-width:750px){body{padding:12px}header{padding:22px}header h1{font-size:24px}.dashboard{grid-template-columns:repeat(2,1fr)}
+        .section{padding:16px}.form-row,.toolbar{flex-direction:column;align-items:stretch}.form-group{width:100%}
+        .toolbar .form-group,.toolbar .form-group.date-group{max-width:none;width:100%}.calendar-grid{gap:4px}
+        .day-box{min-height:58px;padding:4px}.day-number{font-size:12px}.day-summary{font-size:9px}.day-heading{font-size:10px}}
+    </style>
+</head>
+<body>
+<div class="container">
+    <header><h1>📚 Student Attendance System</h1><p>Manage students, daily attendance, and monthly reports.</p></header>
+    <div class="dashboard">
+        <div class="card"><h3>Total Students</h3><p class="purple" id="totalStudents">0</p></div>
+        <div class="card"><h3>Present Today</h3><p class="green" id="presentCount">0</p></div>
+        <div class="card"><h3>Absent Today</h3><p class="red" id="absentCount">0</p></div>
+        <div class="card"><h3>Not Marked</h3><p class="orange" id="unmarkedCount">0</p></div>
+    </div>
+
+    <div class="section">
+        <h2>➕ Add New Student</h2>
+        <form id="studentForm"><div class="form-row">
+            <div class="form-group"><label for="studentId">Student ID</label><input type="text" id="studentId" placeholder="Example: 101" required></div>
+            <div class="form-group"><label for="studentName">Student Name</label><input type="text" id="studentName" placeholder="Enter student name" required></div>
+            <button type="submit" class="add-btn">Add Student</button>
+        </div></form>
+    </div>
+
+    <div class="section">
+        <h2>📅 Monthly Attendance Calendar</h2>
+        <div class="toolbar">
+            <div class="form-group"><label for="monthPicker">Select Month</label><input type="month" id="monthPicker"></div>
+            <div class="form-group date-group"><label for="datePicker">Attendance Date</label><input type="date" id="datePicker"></div>
+            <button class="neutral-btn" id="todayBtn" type="button">Today</button>
+        </div>
+        <div class="calendar-grid" id="calendar"></div>
+        <p class="calendar-note">Tap any date on the calendar to select it and mark attendance. Green means today. Purple border means selected date.</p>
+    </div>
+
+    <div class="section">
+        <h2>✅ Mark Attendance</h2><p class="date-title" id="selectedDateTitle"></p>
+        <div class="toolbar">
+            <button class="present-btn" id="markAllPresent" type="button">Mark All Present</button>
+            <button class="absent-btn" id="markAllAbsent" type="button">Mark All Absent</button>
+            <button class="neutral-btn" id="clearAttendance" type="button">Clear Selected Date</button>
+        </div>
+        <div class="table-wrapper"><table><thead><tr><th>ID</th><th>Student Name</th><th>Attendance</th><th>Monthly %</th><th>Action</th></tr></thead><tbody id="attendanceTable"></tbody></table></div>
+    </div>
+
+    <div class="section">
+        <h2>📊 Monthly Attendance Report</h2><p class="date-title" id="reportMonthTitle"></p>
+        <div class="table-wrapper"><table><thead><tr><th>Student ID</th><th>Student Name</th><th>Present Days</th><th>Absent Days</th><th>Marked Days</th><th>Attendance %</th></tr></thead><tbody id="reportTable"></tbody></table></div>
+        <br><button class="add-btn" id="exportBtn" type="button">⬇️ Download Monthly Report (CSV)</button>
+    </div>
+    <div class="footer">Student Attendance Management System | HTML, CSS &amp; JavaScript</div>
+</div>
+
+<script>
+    const STORAGE_KEY = "studentAttendanceSystem_v1";
+    let students = [], attendance = {};
+    function loadData() {
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                const data = JSON.parse(saved);
+                students = Array.isArray(data.students) ? data.students : [];
+                attendance = data.attendance && typeof data.attendance === "object" ? data.attendance : {};
+            }
+        } catch (error) { console.error("Could not load saved data:", error); }
+    }
+    function saveData() {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify({students, attendance})); }
+        catch (error) { alert("Unable to save data. Check your browser storage."); }
+    }
+    const monthPicker = document.getElementById("monthPicker");
+    const datePicker = document.getElementById("datePicker");
+    function localDateString(date = new Date()) {
+        return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
+    }
+    function getSelectedMonth(){return monthPicker.value}
+    function getSelectedDate(){return datePicker.value}
+    function formatDate(dateString) {
+        if (!dateString) return "";
+        const parts=dateString.split("-");
+        return new Date(Number(parts[0]),Number(parts[1])-1,Number(parts[2])).toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"});
+    }
+    function initializeDates(){const today=localDateString();monthPicker.value=today.slice(0,7);datePicker.value=today;datePicker.max=today;}
+    function getAttendanceForDate(date){if(!attendance[date])attendance[date]={};return attendance[date]}
+    function getMonthlyStats(studentId) {
+        const month=getSelectedMonth();let present=0,absent=0;
+        for(const date in attendance){if(!date.startsWith(month))continue;const status=attendance[date][studentId];if(status==="Present")present++;if(status==="Absent")absent++;}
+        const marked=present+absent;
+        return {present,absent,marked,percentage:marked>0?Math.round(present/marked*10000)/100:0};
+    }
+    function escapeHTML(value){return String(value).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+
+    document.getElementById("studentForm").addEventListener("submit",function(event){
+        event.preventDefault();
+        const id=document.getElementById("studentId").value.trim(),name=document.getElementById("studentName").value.trim();
+        if(!id||!name){alert("Please enter both student ID and name.");return;}
+        if(students.some(s=>s.id.toLowerCase()===id.toLowerCase())){alert("This student ID already exists!");return;}
+        students.push({id,name});saveData();this.reset();renderAll();alert("Student added successfully!");
+    });
+    function setAttendance(studentId,status){
+        const date=getSelectedDate();if(!date){alert("Please select an attendance date.");return;}
+        if(date>localDateString()){alert("You cannot mark attendance for a future date.");return;}
+        getAttendanceForDate(date)[studentId]=status;saveData();renderAll();
+    }
+    function deleteStudent(studentId){
+        const student=students.find(s=>s.id===studentId);if(!student)return;
+        if(!confirm(`Delete ${student.name} and all their attendance records?`))return;
+        students=students.filter(s=>s.id!==studentId);for(const date in attendance)delete attendance[date][studentId];
+        saveData();renderAll();
+    }
+    function renderAttendanceTable(){
+        const tbody=document.getElementById("attendanceTable"),date=getSelectedDate(),dayData=attendance[date]||{};
+        document.getElementById("selectedDateTitle").textContent="Attendance for: "+formatDate(date);
+        if(!students.length){tbody.innerHTML='<tr><td colspan="5" class="empty-message">No students added yet. Add students above.</td></tr>';return;}
+        tbody.innerHTML=students.map(student=>{
+            const status=dayData[student.id]||"Not Marked",stats=getMonthlyStats(student.id);
+            return `<tr><td>${escapeHTML(student.id)}</td><td>${escapeHTML(student.name)}</td><td>
+                <div class="attendance-buttons">
+                <button type="button" class="${status==="Present"?"active-present":"present-btn"}" data-action="present" data-id="${escapeHTML(student.id)}">P</button>
+                <button type="button" class="${status==="Absent"?"active-absent":"absent-btn"}" data-action="absent" data-id="${escapeHTML(student.id)}">A</button>
+                </div><small>${status}</small></td><td class="percentage">${stats.percentage}%</td>
+                <td><button type="button" class="delete-btn" data-action="delete" data-id="${escapeHTML(student.id)}">Delete</button></td></tr>`;
+        }).join("");
+    }
+    document.getElementById("attendanceTable").addEventListener("click",event=>{
+        const button=event.target.closest("button");if(!button)return;
+        const id=button.dataset.id,action=button.dataset.action;
+        if(action==="present")setAttendance(id,"Present");
+        if(action==="absent")setAttendance(id,"Absent");
+        if(action==="delete")deleteStudent(id);
+    });
+    function renderDashboard(){
+        const total=students.length,dayData=attendance[getSelectedDate()]||{};let present=0,absent=0;
+        students.forEach(s=>{if(dayData[s.id]==="Present")present++;if(dayData[s.id]==="Absent")absent++;});
+        document.getElementById("totalStudents").textContent=total;
+        document.getElementById("presentCount").textContent=present;
+        document.getElementById("absentCount").textContent=absent;
+        document.getElementById("unmarkedCount").textContent=total-present-absent;
+    }
+    function renderMonthlyReport(){
+        const tbody=document.getElementById("reportTable"),month=getSelectedMonth();
+        document.getElementById("reportMonthTitle").textContent="Report for: "+month;
+        if(!students.length){tbody.innerHTML='<tr><td colspan="6" class="empty-message">Add students to see their monthly report.</td></tr>';return;}
+        tbody.innerHTML=students.map(s=>{const x=getMonthlyStats(s.id);return `<tr><td>${escapeHTML(s.id)}</td><td>${escapeHTML(s.name)}</td><td>${x.present}</td><td>${x.absent}</td><td>${x.marked}</td><td class="percentage">${x.percentage}%</td></tr>`;}).join("");
+    }
+    function renderCalendar(){
+        const calendar=document.getElementById("calendar"),month=getSelectedMonth();if(!month){calendar.innerHTML="";return;}
+        const parts=month.split("-"),year=Number(parts[0]),monthIndex=Number(parts[1])-1;
+        const firstDay=new Date(year,monthIndex,1).getDay(),daysInMonth=new Date(year,monthIndex+1,0).getDate();
+        const dayNames=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+        let html=dayNames.map(day=>`<div class="day-heading">${day}</div>`).join("");
+        for(let i=0;i<firstDay;i++)html+="<div></div>";
+        const today=localDateString(),selected=getSelectedDate();
+        for(let day=1;day<=daysInMonth;day++){
+            const date=`${year}-${String(monthIndex+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`,data=attendance[date]||{};
+            let present=0,absent=0;students.forEach(s=>{if(data[s.id]==="Present")present++;if(data[s.id]==="Absent")absent++;});
+            html+=`<div class="day-box ${date===selected?"selected":""} ${date===today?"today":""}" data-date="${date}" ${date>today?'style="opacity:0.55;"':""} title="${formatDate(date)}">
+                <div class="day-number">${day}</div><div class="day-summary"><div class="day-present">P: ${present}</div><div class="day-absent">A: ${absent}</div></div></div>`;
+        }
+        calendar.innerHTML=html;
+    }
+    document.getElementById("calendar").addEventListener("click",event=>{
+        const box=event.target.closest("[data-date]");if(!box)return;const date=box.dataset.date;
+        if(date>localDateString()){alert("You cannot mark attendance for a future date.");return;}
+        datePicker.value=date;renderAll();
+    });
+    monthPicker.addEventListener("change",()=>{
+        if(!monthPicker.value)return;const today=localDateString(),first=monthPicker.value+"-01";
+        if(first>today){alert("You cannot select a future month.");monthPicker.value=today.slice(0,7);return;}
+        if(!datePicker.value.startsWith(monthPicker.value)){
+            const lastDay=new Date(Number(monthPicker.value.slice(0,4)),Number(monthPicker.value.slice(5,7)),0).getDate();
+            const day=Math.min(Number(datePicker.value.slice(8,10))||1,lastDay);
+            let newDate=monthPicker.value+"-"+String(day).padStart(2,"0");
+            if(newDate>today)newDate=monthPicker.value===today.slice(0,7)?today:monthPicker.value+"-"+String(lastDay).padStart(2,"0");
+            datePicker.value=newDate;
+        }
+        renderAll();
+    });
+    datePicker.addEventListener("change",()=>{
+        const today=localDateString();if(datePicker.value>today){alert("Future dates are not allowed.");datePicker.value=today;}
+        if(!datePicker.value)datePicker.value=today;monthPicker.value=datePicker.value.slice(0,7);renderAll();
+    });
+    document.getElementById("todayBtn").addEventListener("click",()=>{const today=localDateString();datePicker.value=today;monthPicker.value=today.slice(0,7);renderAll();});
+    function markAll(status){
+        if(!students.length){alert("Please add students first.");return;}const date=getSelectedDate();
+        if(date>localDateString()){alert("Future dates are not allowed.");return;}
+        if(!confirm(`Mark all ${students.length} students as ${status} on ${formatDate(date)}?`))return;
+        const data=getAttendanceForDate(date);students.forEach(s=>data[s.id]=status);saveData();renderAll();
+    }
+    document.getElementById("markAllPresent").addEventListener("click",()=>markAll("Present"));
+    document.getElementById("markAllAbsent").addEventListener("click",()=>markAll("Absent"));
+    document.getElementById("clearAttendance").addEventListener("click",()=>{
+        const date=getSelectedDate();if(!attendance[date]){alert("No attendance records exist for this date.");return;}
+        if(!confirm("Clear all attendance records for "+formatDate(date)+"?"))return;
+        delete attendance[date];saveData();renderAll();
+    });
+    document.getElementById("exportBtn").addEventListener("click",()=>{
+        if(!students.length){alert("Please add students before exporting.");return;}
+        const month=getSelectedMonth(),rows=[["Student ID","Student Name","Present Days","Absent Days","Marked Days","Attendance Percentage"]];
+        students.forEach(s=>{const x=getMonthlyStats(s.id);rows.push([s.id,s.name,x.present,x.absent,x.marked,x.percentage+"%"]);});
+        const csvEscape=value=>'"'+String(value).replace(/"/g,'""')+'"';
+        const csv=rows.map(row=>row.map(csvEscape).join(",")).join("\r\n");
+        const blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8;"}),url=URL.createObjectURL(blob),link=document.createElement("a");
+        link.href=url;link.download="attendance-"+month+".csv";document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url);
+    });
+    function renderAll(){renderDashboard();renderAttendanceTable();renderMonthlyReport();renderCalendar();}
+    loadData();initializeDates();renderAll();
+</script>
+</body>
+</html>
